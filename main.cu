@@ -8,6 +8,7 @@
 #include "hitable_list.h"
 #include "camera.h"
 #include "material.h"
+#include "fp_data_type.h"
 
 // limited version of checkCudaErrors from helper_cuda.h in CUDA examples
 #define checkCudaErrors(val) check_cuda( (val), #val, __FILE__, __LINE__ )
@@ -44,7 +45,7 @@ __device__ vec3 color(const ray& r, hitable **world, curandState *local_rand_sta
         }
         else {
             vec3 unit_direction = unit_vector(cur_ray.direction());
-            float t = 0.5f*(unit_direction.y() + 1.0f);
+            FpDataType t = 0.5f*(unit_direction.y() + 1.0f);
             vec3 c = (1.0f-t)*vec3(1.0, 1.0, 1.0) + t*vec3(0.5, 0.7, 1.0);
             return cur_attenuation * c;
         }
@@ -78,13 +79,13 @@ __global__ void render(vec3 *fb, int max_x, int max_y, int ns, camera **cam, hit
     curandState local_rand_state = rand_state[pixel_index];
     vec3 col(0,0,0);
     for(int s=0; s < ns; s++) {
-        float u = float(i + curand_uniform(&local_rand_state)) / float(max_x);
-        float v = float(j + curand_uniform(&local_rand_state)) / float(max_y);
+        FpDataType u = FpDataType(i + curand_uniform(&local_rand_state)) / FpDataType(max_x);
+        FpDataType v = FpDataType(j + curand_uniform(&local_rand_state)) / FpDataType(max_y);
         ray r = (*cam)->get_ray(u, v, &local_rand_state);
         col += color(r, world, &local_rand_state);
     }
     rand_state[pixel_index] = local_rand_state;
-    col /= float(ns);
+    col /= FpDataType(ns);
     col[0] = sqrt(col[0]);
     col[1] = sqrt(col[1]);
     col[2] = sqrt(col[2]);
@@ -101,6 +102,7 @@ __global__ void create_world(hitable **d_list, hitable **d_world, camera **d_cam
         int i = 1;
         for(int a = -11; a < 11; a++) {
             for(int b = -11; b < 11; b++) {
+                // Don't change this!
                 float choose_mat = RND;
                 vec3 center(a+RND,0.2,b+RND);
                 if(choose_mat < 0.8f) {
@@ -124,13 +126,13 @@ __global__ void create_world(hitable **d_list, hitable **d_world, camera **d_cam
 
         vec3 lookfrom(13,2,3);
         vec3 lookat(0,0,0);
-        float dist_to_focus = 10.0; (lookfrom-lookat).length();
-        float aperture = 0.1;
+        FpDataType dist_to_focus = 10.0; (lookfrom-lookat).length();
+        FpDataType aperture = 0.1;
         *d_camera   = new camera(lookfrom,
                                  lookat,
                                  vec3(0,1,0),
                                  30.0,
-                                 float(nx)/float(ny),
+                                 FpDataType(nx)/FpDataType(ny),
                                  aperture,
                                  dist_to_focus);
     }
