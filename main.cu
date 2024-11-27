@@ -1,5 +1,7 @@
 //#define __CUDA_ARCH__ 610
 
+#include "fp_data_type.h"
+#include <cuda_fp16.h>
 #include <iostream>
 #include <time.h>
 #include <float.h>
@@ -11,7 +13,6 @@
 #include "hitable_list.h"
 #include "camera.h"
 #include "material.h"
-#include "fp_data_type.h"
 
 // limited version of checkCudaErrors from helper_cuda.h in CUDA examples
 #define checkCudaErrors(val) check_cuda((val), #val, __FILE__, __LINE__)
@@ -96,16 +97,16 @@ __global__ void render(vec3 *fb, int max_x, int max_y, int ns, camera **cam, hit
     vec3 col(0, 0, 0);
     for (int s = 0; s < ns; s++)
     {
-        FpDataType u = FpDataType(i + curand_uniform(&local_rand_state)) / FpDataType(max_x);
-        FpDataType v = FpDataType(j + curand_uniform(&local_rand_state)) / FpDataType(max_y);
+        FpDataType u = __float2half((i + curand_uniform(&local_rand_state)) / max_x);
+        FpDataType v = __float2half((j + curand_uniform(&local_rand_state)) / max_y);
         ray r = (*cam)->get_ray(u, v, &local_rand_state);
         col += color(r, world, &local_rand_state);
     }
     rand_state[pixel_index] = local_rand_state;
     col /= FpDataType(ns);
-    col[0] = sqrt(__half2float(col[0]));
-    col[1] = sqrt(__half2float(col[1]));
-    col[2] = sqrt(__half2float(col[2]));
+    col[0] = hsqrt(col[0]);
+    col[1] = hsqrt(col[1]);
+    col[2] = hsqrt(col[2]);
     fb[pixel_index] = col;
 }
 
@@ -174,7 +175,7 @@ __global__ void free_world(hitable **d_list, hitable **d_world, camera **d_camer
     delete *d_camera;
 }
 
-constexpr const int clip(const int v, const int lo, const int hi)
+constexpr int clip(const int v, const int lo, const int hi)
 {
     return std::max(std::min(v, hi), lo);
 }
@@ -243,9 +244,9 @@ int main()
         for (int i = 0; i < nx; i++)
         {
             size_t pixel_index = j * nx + i;
-            int ir = clip(int(255.99 * __half2float(fb[pixel_index].r())), 0, 255);
-            int ig = clip(int(255.99 * __half2float(fb[pixel_index].g())), 0, 255);
-            int ib = clip(int(255.99 * __half2float(fb[pixel_index].b())), 0, 255);
+            int ir = uint8_t(255.99 * __half2float(fb[pixel_index].r()));
+            int ig = uint8_t(255.99 * __half2float(fb[pixel_index].g()));
+            int ib = uint8_t(255.99 * __half2float(fb[pixel_index].b()));
             std::cout << ir << " " << ig << " " << ib << "\n";
         }
     }
