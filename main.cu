@@ -174,6 +174,11 @@ __global__ void free_world(hitable **d_list, hitable **d_world, camera **d_camer
     delete *d_camera;
 }
 
+constexpr const int clip(const int v, const int lo, const int hi)
+{
+    return std::max(std::min(v, hi), lo);
+}
+
 int main()
 {
     int nx = 1200;
@@ -238,9 +243,9 @@ int main()
         for (int i = 0; i < nx; i++)
         {
             size_t pixel_index = j * nx + i;
-            int ir = std::clamp(int(255.99 * __half2float(fb[pixel_index].r())),0,255);
-            int ig = std::clamp(int(255.99 * __half2float(fb[pixel_index].g())),0,255);
-            int ib = std::clamp(int(255.99 * __half2float(fb[pixel_index].b())),0,255);
+            int ir = clip(int(255.99 * __half2float(fb[pixel_index].r())), 0, 255);
+            int ig = clip(int(255.99 * __half2float(fb[pixel_index].g())), 0, 255);
+            int ib = clip(int(255.99 * __half2float(fb[pixel_index].b())), 0, 255);
             std::cout << ir << " " << ig << " " << ib << "\n";
         }
     }
