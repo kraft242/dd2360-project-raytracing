@@ -22,12 +22,12 @@ __device__ vec3 random_in_unit_disk(curandState *local_rand_state)
 class camera
 {
 public:
-    __device__ camera(vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float aspect, float aperture, float focus_dist)
+    __device__ camera(vec3 lookfrom, vec3 lookat, vec3 vup, FpDataType vfov, FpDataType aspect, FpDataType aperture, FpDataType focus_dist)
     { // vfov is top to bottom in degrees
         lens_radius = aperture / 2.0f;
-        float theta = vfov * ((float)M_PI) / float(180.0f);
-        float half_height = htan(theta / 2.0f);
-        float half_width = aspect * half_height;
+        FpDataType theta = vfov * ((FpDataType)M_PI) / FpDataType(180.0f);
+        FpDataType half_height = d_tan(theta / 2.0f);
+        FpDataType half_width = aspect * half_height;
         origin = lookfrom;
         w = unit_vector(lookfrom - lookat);
         u = unit_vector(cross(vup, w));
@@ -36,7 +36,7 @@ public:
         horizontal = 2.0f * half_width * focus_dist * u;
         vertical = 2.0f * half_height * focus_dist * v;
     }
-    __device__ ray get_ray(float s, float t, curandState *local_rand_state)
+    __device__ ray get_ray(FpDataType s, FpDataType t, curandState *local_rand_state)
     {
         vec3 rd = lens_radius * random_in_unit_disk(local_rand_state);
         vec3 offset = u * rd.x() + v * rd.y();
@@ -48,7 +48,7 @@ public:
     vec3 horizontal;
     vec3 vertical;
     vec3 u, v, w;
-    float lens_radius;
+    FpDataType lens_radius;
 };
 
 #endif

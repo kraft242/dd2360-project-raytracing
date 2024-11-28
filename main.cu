@@ -38,7 +38,7 @@ __device__ vec3 color(const ray &r, hitable **world, curandState *local_rand_sta
     for (int i = 0; i < 50; i++)
     {
         hit_record rec;
-        if ((*world)->hit(cur_ray, 0.001f, FLT_MAX, rec))
+        if ((*world)->hit(cur_ray, FpDataType(0.001f), FLT_MAX, rec))
         {
             ray scattered;
             vec3 attenuation;
@@ -55,8 +55,8 @@ __device__ vec3 color(const ray &r, hitable **world, curandState *local_rand_sta
         else
         {
             vec3 unit_direction = unit_vector(cur_ray.direction());
-            float t = float(0.5f) * (unit_direction.y() + 1.0f);
-            vec3 c = (1.0f - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+            FpDataType t = FpDataType(0.5f) * (unit_direction.y() + FpDataType(1.0f));
+            vec3 c = (FpDataType(1.0f) - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
             return cur_attenuation * c;
         }
     }
@@ -96,16 +96,16 @@ __global__ void render(vec3 *fb, int max_x, int max_y, int ns, camera **cam, hit
     vec3 col(0, 0, 0);
     for (int s = 0; s < ns; s++)
     {
-        FpDataType u = __float2half(i + curand_uniform(&local_rand_state)) / __int2half_rz(max_x);
-        FpDataType v = __float2half(j + curand_uniform(&local_rand_state)) / __int2half_rz(max_y);
+        FpDataType u = (i + curand_uniform(&local_rand_state)) / (max_x);
+        FpDataType v = (j + curand_uniform(&local_rand_state)) / (max_y);
         ray r = (*cam)->get_ray(u, v, &local_rand_state);
         col += color(r, world, &local_rand_state);
     }
     rand_state[pixel_index] = local_rand_state;
-    col /= float(ns);
-    col[0] = hsqrt(__float2half(col[0]));
-    col[1] = hsqrt(__float2half(col[1]));
-    col[2] = hsqrt(__float2half(col[2]));
+    col /= FpDataType(ns);
+    col[0] = d_sqrt(col[0]);
+    col[1] = d_sqrt(col[1]);
+    col[2] = d_sqrt(col[2]);
     fb[pixel_index] = col;
 }
 
