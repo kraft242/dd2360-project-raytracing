@@ -55,8 +55,8 @@ __device__ vec3 color(const ray &r, hitable **world, curandState *local_rand_sta
         else
         {
             vec3 unit_direction = unit_vector(cur_ray.direction());
-            FpDataType t = FpDataType(0.5f) * (unit_direction.y() + FP_DATA_TYPE_ONE);
-            vec3 c = (FP_DATA_TYPE_ONE - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+            float t = float(0.5f) * (unit_direction.y() + 1.0f);
+            vec3 c = (1.0f - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
             return cur_attenuation * c;
         }
     }
@@ -96,16 +96,16 @@ __global__ void render(vec3 *fb, int max_x, int max_y, int ns, camera **cam, hit
     vec3 col(0, 0, 0);
     for (int s = 0; s < ns; s++)
     {
-        FpDataType u = __float2half((i + curand_uniform(&local_rand_state)) / max_x);
-        FpDataType v = __float2half((j + curand_uniform(&local_rand_state)) / max_y);
+        FpDataType u = __float2half(i + curand_uniform(&local_rand_state)) / __int2half_rz(max_x);
+        FpDataType v = __float2half(j + curand_uniform(&local_rand_state)) / __int2half_rz(max_y);
         ray r = (*cam)->get_ray(u, v, &local_rand_state);
         col += color(r, world, &local_rand_state);
     }
     rand_state[pixel_index] = local_rand_state;
-    col /= FpDataType(ns);
-    col[0] = hsqrt(col[0]);
-    col[1] = hsqrt(col[1]);
-    col[2] = hsqrt(col[2]);
+    col /= float(ns);
+    col[0] = hsqrt(__float2half(col[0]));
+    col[1] = hsqrt(__float2half(col[1]));
+    col[2] = hsqrt(__float2half(col[2]));
     fb[pixel_index] = col;
 }
 
@@ -123,9 +123,9 @@ __global__ void convert_fb_to_int(const vec3 *fp16_fb, int3 *int_fb, const int m
     int pixel_index = j * max_x + i;
     const vec3 fp16_pixel = fp16_fb[pixel_index];
     const int3 uchar_pixel = make_int3(
-        clip(__half2int_rn(__float2half(255.99f) * fp16_pixel.x()), 0, 255),
-        clip(__half2int_rn(__float2half(255.99f) * fp16_pixel.y()), 0, 255),
-        clip(__half2int_rn(__float2half(255.99f) * fp16_pixel.z()), 0, 255));
+        clip(__float2int_rn(255.99f * fp16_pixel.x()), 0, 255),
+        clip(__float2int_rn(255.99f * fp16_pixel.y()), 0, 255),
+        clip(__float2int_rn(255.99f * fp16_pixel.z()), 0, 255));
     int_fb[pixel_index] = uchar_pixel;
 }
 
@@ -170,14 +170,14 @@ __global__ void create_world(hitable **d_list, hitable **d_world, camera **d_cam
 
         vec3 lookfrom(13, 2, 3);
         vec3 lookat(0, 0, 0);
-        FpDataType dist_to_focus = 10.0;
+        float dist_to_focus = 10.0;
         //(lookfrom - lookat).length();
-        FpDataType aperture = 0.1;
+        float aperture = 0.1;
         *d_camera = new camera(lookfrom,
                                lookat,
                                vec3(0, 1, 0),
                                30.0,
-                               FpDataType(nx) / FpDataType(ny),
+                               float(nx) / float(ny),
                                aperture,
                                dist_to_focus);
     }
