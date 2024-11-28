@@ -2,3 +2,10 @@ cudart
 cudart.o
 out.jpg
 out.ppm
+
+cudart.exe
+cudart.exp
+cudart.lib
+
+.vscode
+.idea
