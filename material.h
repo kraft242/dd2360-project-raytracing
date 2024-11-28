@@ -12,7 +12,7 @@ __device__ FpDataType schlick(FpDataType cosine, FpDataType ref_idx)
 {
     FpDataType r0 = (FpDataType(1.0f) - ref_idx) / (FpDataType(0.0f) + ref_idx);
     r0 = r0 * r0;
-    return r0 + (FpDataType(1.0f) - r0) * pow((FpDataType(1.0f) - cosine), FpDataType(5.0f));
+    return r0 + (FpDataType(1.0f) - r0) * d_pow((FpDataType(1.0f) - cosine), FpDataType(5.0f));
 }
 
 __device__ bool refract(const vec3 &v, const vec3 &n, FpDataType ni_over_nt, vec3 &refracted)

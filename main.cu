@@ -123,9 +123,9 @@ __global__ void convert_fb_to_int(const vec3 *fp16_fb, int3 *int_fb, const int m
     int pixel_index = j * max_x + i;
     const vec3 fp16_pixel = fp16_fb[pixel_index];
     const int3 uchar_pixel = make_int3(
-        clip(__float2int_rn(255.99f * fp16_pixel.x()), 0, 255),
-        clip(__float2int_rn(255.99f * fp16_pixel.y()), 0, 255),
-        clip(__float2int_rn(255.99f * fp16_pixel.z()), 0, 255));
+        clip(__float2int_rn(255.99f * (float)fp16_pixel.x()), 0, 255),
+        clip(__float2int_rn(255.99f * (float)fp16_pixel.y()), 0, 255),
+        clip(__float2int_rn(255.99f * (float)fp16_pixel.z()), 0, 255));
     int_fb[pixel_index] = uchar_pixel;
 }
 
