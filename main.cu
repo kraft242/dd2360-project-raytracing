@@ -1,7 +1,6 @@
-//#define __CUDA_ARCH__ 610
+#define __CUDA_ARCH__ 610
 
 #include "fp_data_type.h"
-#include <cuda_fp16.h>
 #include <iostream>
 #include <time.h>
 #include <float.h>
@@ -110,6 +109,26 @@ __global__ void render(vec3 *fb, int max_x, int max_y, int ns, camera **cam, hit
     fb[pixel_index] = col;
 }
 
+__device__ int clip(const int value, const int lo, const int hi)
+{
+    return min(max(value, lo), hi);
+}
+
+__global__ void convert_fb_to_int(const vec3 *fp16_fb, int3 *int_fb, const int max_x, const int max_y)
+{
+    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    int j = threadIdx.y + blockIdx.y * blockDim.y;
+    if ((i >= max_x) || (j >= max_y))
+        return;
+    int pixel_index = j * max_x + i;
+    const vec3 fp16_pixel = fp16_fb[pixel_index];
+    const int3 uchar_pixel = make_int3(
+        clip(__half2int_rn(__float2half(255.99f) * fp16_pixel.x()), 0, 255),
+        clip(__half2int_rn(__float2half(255.99f) * fp16_pixel.y()), 0, 255),
+        clip(__half2int_rn(__float2half(255.99f) * fp16_pixel.z()), 0, 255));
+    int_fb[pixel_index] = uchar_pixel;
+}
+
 #define RND (curand_uniform(&local_rand_state))
 
 __global__ void create_world(hitable **d_list, hitable **d_world, camera **d_camera, int nx, int ny, curandState *rand_state)
@@ -175,11 +194,6 @@ __global__ void free_world(hitable **d_list, hitable **d_world, camera **d_camer
     delete *d_camera;
 }
 
-constexpr int clip(const int v, const int lo, const int hi)
-{
-    return std::max(std::min(v, hi), lo);
-}
-
 int main()
 {
     int nx = 1200;
@@ -197,6 +211,10 @@ int main()
     // allocate FB
     vec3 *fb;
     checkCudaErrors(cudaMallocManaged((void **)&fb, fb_size));
+
+    // allocate int FB
+    int3 *int_fb;
+    checkCudaErrors(cudaMallocManaged((void **)&int_fb, num_pixels * sizeof(int3)));
 
     // allocate random state
     curandState *d_rand_state;
@@ -232,6 +250,9 @@ int main()
     render<<<blocks, threads>>>(fb, nx, ny, ns, d_camera, d_world, d_rand_state);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
+    convert_fb_to_int<<<blocks, threads>>>(fb, int_fb, nx, ny);
+    checkCudaErrors(cudaGetLastError());
+    checkCudaErrors(cudaDeviceSynchronize());
     stop = clock();
     double timer_seconds = ((double)(stop - start)) / CLOCKS_PER_SEC;
     std::cerr << "took " << timer_seconds << " seconds.\n";
@@ -244,9 +265,9 @@ int main()
         for (int i = 0; i < nx; i++)
         {
             size_t pixel_index = j * nx + i;
-            int ir = uint8_t(255.99 * __half2float(fb[pixel_index].r()));
-            int ig = uint8_t(255.99 * __half2float(fb[pixel_index].g()));
-            int ib = uint8_t(255.99 * __half2float(fb[pixel_index].b()));
+            int ir = int_fb[pixel_index].x;
+            int ig = int_fb[pixel_index].y;
+            int ib = int_fb[pixel_index].z;
             std::cout << ir << " " << ig << " " << ib << "\n";
         }
     }
@@ -261,6 +282,7 @@ int main()
     checkCudaErrors(cudaFree(d_rand_state));
     checkCudaErrors(cudaFree(d_rand_state2));
     checkCudaErrors(cudaFree(fb));
+    checkCudaErrors(cudaFree(int_fb));
 
     cudaDeviceReset();
 }
