@@ -1,9 +1,7 @@
 #ifndef FP_DATA_TYPE_H
 #define FP_DATA_TYPE_H
 
-#include <cuda_fp16.h>
-
-typedef __half FpDataType;
+typedef float FpDataType;
 
 #define FP_DATA_TYPE_ZERO FpDataType(0.0f)
 #define FP_DATA_TYPE_ONE FpDataType(1.0f)
@@ -12,36 +10,22 @@ typedef __half FpDataType;
 #define FP_DATA_TYPE_FOUR FpDataType(4.0f)
 #define FP_DATA_TYPE_FIVE FpDataType(5.0f)
 
-__device__ inline FpDataType habs(const __half a) {
-    __half_raw abs_a_raw = static_cast<__half_raw>(a);
-    abs_a_raw.x &= (unsigned short)0x7FFFU;
-    if (abs_a_raw.x > (unsigned short)0x7C00U)
-    {
-        // return canonical NaN
-        abs_a_raw.x = (unsigned short)0x7FFFU;
-    }
-    return static_cast<__half>(abs_a_raw);
+__device__ inline FpDataType habs(const FpDataType a) {
+  return std::abs(a);
 }
 
 __device__ FpDataType hpow(const FpDataType base, const FpDataType power)
 {
-    return hexp(power * hlog(base));
+    return std::pow(base, power);
 }
 
 __device__ FpDataType htan(const FpDataType angle)
 {
-    const FpDataType cos = hcos(angle);
-    const FpDataType sin = hsin(angle);
-    const FpDataType tolerance = FpDataType(1e-3);
-    if (habs(cos) < tolerance)
-    {
-        return FP_DATA_TYPE_ZERO;
-    }
-    return sin / cos;
+  return std::tan(angle);
 }
 
 __device__ inline FpDataType d_sqrt(const FpDataType v) {
-    return hsqrt(v);
+    return std::sqrt(v);
 }
 
 __device__ inline FpDataType d_mul(const FpDataType a, const FpDataType b) {
