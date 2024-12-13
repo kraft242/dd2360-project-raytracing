@@ -1,7 +1,7 @@
 #ifndef FP_DATA_TYPE_H
 #define FP_DATA_TYPE_H
 
-typedef float FpDataType;
+typedef double FpDataType;
 
 #define FP_DATA_TYPE_ZERO FpDataType(0.0f)
 #define FP_DATA_TYPE_ONE FpDataType(1.0f)
