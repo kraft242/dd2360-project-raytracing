@@ -245,15 +245,31 @@ int main()
     // Render our buffer
     dim3 blocks(nx / tx + 1, ny / ty + 1);
     dim3 threads(tx, ty);
+
+    clock_t init_start = clock();
     render_init<<<blocks, threads>>>(nx, ny, d_rand_state);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
+    clock_t init_stop = clock();
+    double init_timer_seconds = ((double)(init_stop - init_start)) / CLOCKS_PER_SEC;
+    std::cerr << "Initialized in " << init_timer_seconds << " seconds.\n";
+
+    clock_t render_start = clock();
     render<<<blocks, threads>>>(fb, nx, ny, ns, d_camera, d_world, d_rand_state);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
+    clock_t render_stop = clock();
+    double render_timer_seconds = ((double)(render_stop - render_start)) / CLOCKS_PER_SEC;
+    std::cerr << "Rendered in " << render_timer_seconds << " seconds.\n";
+
+    clock_t convert_start = clock();
     convert_fb_to_int<<<blocks, threads>>>(fb, int_fb, nx, ny);
     checkCudaErrors(cudaGetLastError());
     checkCudaErrors(cudaDeviceSynchronize());
+    clock_t convert_stop = clock();
+    double convert_timer_seconds = ((double)(convert_stop - convert_start)) / CLOCKS_PER_SEC;
+    std::cerr << "Converted to ppm data in " << convert_timer_seconds << " seconds.\n";
+
     stop = clock();
     double timer_seconds = ((double)(stop - start)) / CLOCKS_PER_SEC;
     std::cerr << "took " << timer_seconds << " seconds.\n";
