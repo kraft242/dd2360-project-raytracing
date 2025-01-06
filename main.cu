@@ -37,7 +37,7 @@ __device__ vec3 color(const ray &r, hitable **world, curandState *local_rand_sta
     for (int i = 0; i < 50; i++)
     {
         hit_record rec;
-        if ((*world)->hit(cur_ray, FpDataType(0.001f), FLT_MAX, rec))
+        if ((*world)->hit(cur_ray, FpDataType(0.001f), DATA_TYPE_MAX, rec))
         {
             ray scattered;
             vec3 attenuation;

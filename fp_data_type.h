@@ -5,6 +5,8 @@
 
 typedef __half FpDataType;
 
+#define DATA_TYPE_MAX 65504.0
+
 #define FP_DATA_TYPE_ZERO FpDataType(0.0f)
 #define FP_DATA_TYPE_ONE FpDataType(1.0f)
 #define FP_DATA_TYPE_TWO FpDataType(2.0f)
