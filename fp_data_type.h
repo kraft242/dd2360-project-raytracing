@@ -34,7 +34,7 @@ __device__ inline FpDataType d_sqrt(const FpDataType v) {
     return std::sqrt(v);
 }
 
-// Give the data type a way to calculate the dot product of two vectors
+// Give the data type a way to calculate the multiplication of two values
 __device__ inline FpDataType d_mul(const FpDataType a, const FpDataType b) {
     return a * b;
 }
