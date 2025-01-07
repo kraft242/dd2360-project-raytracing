@@ -1,7 +1,7 @@
 #ifndef FP_DATA_TYPE_H
 #define FP_DATA_TYPE_H
 
-#include <cuda_fp16.h>
+#include <cuda_fp16.h> //Include the cuda half data type
 
 typedef __half FpDataType; // This is the data type that will be used for all floating point operations
 
